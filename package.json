@@ -15,6 +15,14 @@
     "dev": "tsx watch src/test.ts",
     "prepublishOnly": "npm run build"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/saminwankwo/telegram-logger.git"
+  },
+  "bugs": {
+    "url": "https://github.com/saminwankwo/telegram-logger/issues"
+  },
+  "homepage": "https://github.com/saminwankwo/telegram-logger#readme",
   "keywords": [
     "telegram",
     "logger",
@@ -25,7 +33,7 @@
     "sentry-alternative",
     "crash-report"
   ],
-  "author": "",
+  "author": "Nwankwo Samuel",
   "license": "ISC",
   "type": "module",
   "dependencies": {
