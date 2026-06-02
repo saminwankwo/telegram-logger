@@ -1,6 +1,6 @@
 {
   "name": "@alertship/alertship",
-  "version": "1.0.2 ",
+  "version": "1.0.8",
   "description": "A production-grade Telegram error logger for Node.js, capturing crashes, resource usage, and request context.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
