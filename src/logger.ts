@@ -1,4 +1,3 @@
-import TelegramBot from 'node-telegram-bot-api';
 import os from 'os';
 import crypto from 'crypto';
 import * as dotenv from 'dotenv';
@@ -37,6 +36,7 @@ export interface LoggerOptions {
   environment?: string;
   version?: string;
   minLevel?: LogLevel;
+  enabled?: boolean;
   resourceMonitoringInterval?: number; // in ms, 0 to disable
   eventLoopLagThreshold?: number; // in ms, default 100
 }
@@ -51,29 +51,53 @@ export interface RequestContext {
 export const requestContext = new AsyncLocalStorage<RequestContext>();
 
 export class TelegramLogger {
-  private bot: TelegramBot;
   private options: LoggerOptions;
   private crashCount: number = 0;
-  private lastMessageHash: string = '';
-  private lastMessageTime: number = 0;
+  private recentAlerts = new Map<string, number>();
   private lastCpuUsage: { user: number; system: number } | null = null;
   private lastCpuTime: number = 0;
+  private readonly DEDUP_TTL = 5 * 60 * 1000; // 5 minutes
 
   constructor(options: LoggerOptions) {
     this.options = {
       environment: process.env.NODE_ENV || 'development',
-      minLevel: LogLevel.INFO,
+      minLevel: LogLevel.WARN,
+      enabled: options.enabled ?? (process.env.NODE_ENV === 'production' || !!options.botToken),
       resourceMonitoringInterval: 60_000,
       eventLoopLagThreshold: 100,
       ...options,
     };
-    this.bot = new TelegramBot(this.options.botToken);
     this.setupAutoMonitoring();
     this.startMonitoring();
+    this.setupCleanup();
+  }
+
+  /**
+   * Send a deployment notification
+   */
+  async notifyStartup(): Promise<void> {
+    await this.info('Server started', {
+      version: process.env.APP_VERSION ?? this.options.version ?? 'unknown',
+      commit: process.env.GIT_COMMIT ?? 'unknown',
+      branch: process.env.GIT_BRANCH ?? 'unknown',
+      nodeVersion: process.version,
+      uptime: `${process.uptime().toFixed(1)}s`,
+      pid: process.pid,
+      type: 'startup_notification',
+    });
+  }
+
+  private setupCleanup() {
+    setInterval(() => {
+      const cutoff = Date.now() - this.DEDUP_TTL;
+      for (const [key, ts] of this.recentAlerts) {
+        if (ts < cutoff) this.recentAlerts.delete(key);
+      }
+    }, 10 * 60 * 1000).unref();
   }
 
   private startMonitoring() {
-    if (this.options.resourceMonitoringInterval && this.options.resourceMonitoringInterval > 0) {
+    if (this.options.enabled && this.options.resourceMonitoringInterval && this.options.resourceMonitoringInterval > 0) {
       setInterval(() => {
         this.logResources();
       }, this.options.resourceMonitoringInterval).unref();
@@ -83,6 +107,7 @@ export class TelegramLogger {
   }
 
   private monitorEventLoopLag() {
+    if (!this.options.enabled) return;
     let last = Date.now();
     const interval = 1000;
     setInterval(() => {
@@ -97,34 +122,65 @@ export class TelegramLogger {
   }
 
   private shouldLog(level: LogLevel): boolean {
-    return level >= (this.options.minLevel ?? LogLevel.INFO);
+    return this.options.enabled === true && level >= (this.options.minLevel ?? LogLevel.WARN);
   }
 
   private isSpam(message: string | Error): boolean {
-    const key = message instanceof Error ? message.stack || message.message : message;
+    const key = message instanceof Error ? `${message.message}${message.stack ?? ''}` : message;
     const hash = crypto.createHash('md5').update(key).digest('hex');
     const now = Date.now();
-    const cooldown = 5000; // 5 seconds cooldown for exact same message
+    const lastSeen = this.recentAlerts.get(hash);
 
-    if (hash === this.lastMessageHash && now - this.lastMessageTime < cooldown) {
+    if (lastSeen && now - lastSeen < this.DEDUP_TTL) {
       return true;
     }
 
-    this.lastMessageHash = hash;
-    this.lastMessageTime = now;
+    this.recentAlerts.set(hash, now);
     return false;
+  }
+
+  private splitMessage(text: string, limit = 4000): string[] {
+    if (text.length <= limit) return [text];
+    const parts: string[] = [];
+    let i = 0;
+    while (i < text.length) {
+      parts.push(text.slice(i, i + limit));
+      i += limit;
+    }
+    return parts;
   }
 
   private async sendMessage(text: string, level: LogLevel, originalMessage: string | Error) {
     if (!this.shouldLog(level)) return;
     if (this.isSpam(originalMessage)) return;
 
+    const chunks = this.splitMessage(text);
+
+    for (let i = 0; i < chunks.length; i++) {
+      const suffix = chunks.length > 1 ? `\n\n_(${i + 1}/${chunks.length})_` : '';
+      await this.postToTelegram(chunks[i] + suffix);
+    }
+  }
+
+  private async postToTelegram(text: string) {
     try {
-      // Ensure text is not too long for Telegram (max 4096 chars)
-      const truncatedText = text.length > 4000 ? text.substring(0, 3997) + '...' : text;
-      await this.bot.sendMessage(this.options.chatId, truncatedText, { parse_mode: 'Markdown' });
+      const url = `https://api.telegram.org/bot${this.options.botToken}/sendMessage`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: this.options.chatId,
+          text,
+          parse_mode: 'Markdown',
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Telegram API Error:', response.status, errorData);
+      }
     } catch (error) {
-      console.error('Failed to send message to Telegram:', error);
+      console.error('Failed to send message to Telegram via fetch:', error);
     }
   }
 

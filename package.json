@@ -5,14 +5,22 @@
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsc",
-    "test": "tsx src/test.ts",
-    "dev": "tsx watch src/test.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "tsx tests/test.ts",
+    "dev": "tsx watch tests/test.ts",
     "prepublishOnly": "npm run build"
   },
   "repository": {
@@ -36,14 +44,13 @@
   "author": "Nwankwo Samuel",
   "license": "ISC",
   "type": "module",
-  "dependencies": {
-    "axios": "^1.16.1",
-    "dotenv": "^16.4.7",
-    "node-telegram-bot-api": "^0.66.0"
+  "dependencies": {},
+  "peerDependencies": {
+    "dotenv": ">=16"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
-    "@types/node-telegram-bot-api": "^0.64.7",
+    "dotenv": "^16.4.7",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   }

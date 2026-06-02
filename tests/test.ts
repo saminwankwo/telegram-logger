@@ -1,4 +1,4 @@
-import { TelegramLogger, LogLevel } from './index.js';
+import { TelegramLogger, LogLevel } from '../src/index.js';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
