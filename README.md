@@ -74,7 +74,7 @@ If you want to send all your existing `console.log`, `console.warn`, and `consol
 const logger = new TelegramLogger({
   botToken: '...',
   chatId: '...',
-  appName: 'Phunplan',
+  appName: 'ChatApi',
   interceptConsole: true
 });
 
