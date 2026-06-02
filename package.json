@@ -18,7 +18,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && mv dist/index.js dist/index.mjs && tsc -p tsconfig.build.json --module commonjs --verbatimModuleSyntax false --moduleResolution node --target es2020",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && mv dist/index.js dist/index.mjs && mv dist/logger.js dist/logger.mjs && tsc -p tsconfig.build.json --module commonjs --verbatimModuleSyntax false --moduleResolution node --target es2022 --declaration false --declarationMap false",
     "test": "tsx tests/test.ts",
     "dev": "tsx watch tests/test.ts",
     "prepublishOnly": "npm run build"
