@@ -1,5 +1,5 @@
 {
-  "name": "telegrambot",
+  "name": "alertship",
   "version": "1.0.0",
   "description": "A production-grade Telegram error logger for Node.js, capturing crashes, resource usage, and request context.",
   "main": "dist/index.js",
