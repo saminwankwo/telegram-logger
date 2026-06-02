@@ -76,10 +76,25 @@ export class TelegramLogger {
    * Send a deployment notification
    */
   async notifyStartup(): Promise<void> {
+    const version = process.env.APP_VERSION || 
+                   process.env.npm_package_version || 
+                   this.options.version || 
+                   'unknown';
+
+    const commit = process.env.GIT_COMMIT || 
+                  process.env.FLY_ALLOC_ID || 
+                  process.env.RENDER_GIT_COMMIT || 
+                  process.env.DIGITALOCEAN_APP_COMMIT ||
+                  'unknown';
+
+    const branch = process.env.GIT_BRANCH || 
+                  process.env.VERCEL_GIT_COMMIT_REF || 
+                  'unknown';
+
     await this.info('Server started', {
-      version: process.env.APP_VERSION ?? this.options.version ?? 'unknown',
-      commit: process.env.GIT_COMMIT ?? 'unknown',
-      branch: process.env.GIT_BRANCH ?? 'unknown',
+      version,
+      commit,
+      branch,
       nodeVersion: process.version,
       uptime: `${process.uptime().toFixed(1)}s`,
       pid: process.pid,

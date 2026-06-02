@@ -3,13 +3,13 @@
   "version": "1.0.1",
   "description": "A production-grade Telegram error logger for Node.js, capturing crashes, resource usage, and request context.",
   "main": "dist/index.js",
-  "module": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     }
   },
   "files": [
@@ -18,7 +18,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && mv dist/index.js dist/index.mjs && tsc -p tsconfig.build.json --module commonjs --verbatimModuleSyntax false --moduleResolution node --target es2020",
     "test": "tsx tests/test.ts",
     "dev": "tsx watch tests/test.ts",
     "prepublishOnly": "npm run build"
@@ -43,7 +43,6 @@
   ],
   "author": "Nwankwo Samuel",
   "license": "ISC",
-  "type": "module",
   "dependencies": {},
   "peerDependencies": {
     "dotenv": ">=16"

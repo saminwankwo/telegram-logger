@@ -71,6 +71,7 @@ app.get('/', (req, res) => {
 | `enabled` | `boolean` | `true` (if prod) | Set to `false` to disable Telegram alerts |
 | `resourceMonitoringInterval` | `number` | `60000` | ms between resource checks (0 to disable) |
 | `eventLoopLagThreshold` | `number` | `100` | ms threshold for event-loop lag alerts |
+| `preferIPv4` | `boolean` | `true` | Forces IPv4 first to avoid `EHOSTUNREACH` issues |
 
 ## Environment Variables
 
