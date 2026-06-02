@@ -100,8 +100,9 @@ export class TelegramLogger {
     return level >= (this.options.minLevel ?? LogLevel.INFO);
   }
 
-  private isSpam(text: string): boolean {
-    const hash = crypto.createHash('md5').update(text).digest('hex');
+  private isSpam(message: string | Error): boolean {
+    const key = message instanceof Error ? message.stack || message.message : message;
+    const hash = crypto.createHash('md5').update(key).digest('hex');
     const now = Date.now();
     const cooldown = 5000; // 5 seconds cooldown for exact same message
 
@@ -114,9 +115,9 @@ export class TelegramLogger {
     return false;
   }
 
-  private async sendMessage(text: string, level: LogLevel) {
+  private async sendMessage(text: string, level: LogLevel, originalMessage: string | Error) {
     if (!this.shouldLog(level)) return;
-    if (this.isSpam(text)) return;
+    if (this.isSpam(originalMessage)) return;
 
     try {
       // Ensure text is not too long for Telegram (max 4096 chars)
@@ -174,24 +175,24 @@ export class TelegramLogger {
 
   async info(message: string, context?: any) {
     const text = this.formatMessage('INFO', message, 'ℹ️', context);
-    await this.sendMessage(text, LogLevel.INFO);
+    await this.sendMessage(text, LogLevel.INFO, message);
   }
 
   async warn(message: string, context?: any) {
     const text = this.formatMessage('WARNING', message, '⚠️', context);
-    await this.sendMessage(text, LogLevel.WARN);
+    await this.sendMessage(text, LogLevel.WARN, message);
   }
 
   async error(error: Error | string, context?: any) {
     const err = error instanceof Error ? error : new Error(error);
     const text = this.formatMessage('ERROR', err, '🚨', context);
-    await this.sendMessage(text, LogLevel.ERROR);
+    await this.sendMessage(text, LogLevel.ERROR, err);
   }
 
   async critical(error: Error | string, context?: any) {
     const err = error instanceof Error ? error : new Error(error);
     const text = this.formatMessage('CRITICAL', err, '🔥', context);
-    await this.sendMessage(text, LogLevel.CRITICAL);
+    await this.sendMessage(text, LogLevel.CRITICAL, err);
   }
 
   private setupAutoMonitoring() {
