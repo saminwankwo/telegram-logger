@@ -8,7 +8,13 @@ A production-grade, **zero-dependency** NPM package that captures, enriches, and
 - ✅ **Automatic Monitoring**: Catches `uncaughtException` and `unhandledRejection`.
 - 📊 **Resource Monitoring**: Tracks CPU usage, Heap memory, and Event-loop lag.
 - 🔗 **Request Context**: Ties errors to HTTP requests using `AsyncLocalStorage`.
-- 🔍 **Log Level Filtering**: Filter logs by `DEBUG`, `INFO`, `WARN`, `ERROR`, or `CRITICAL`.
+- 🔍 **Log Level Filtering**: Filter logs by severity to control noise.
+  - `DEBUG` (0): Every detail (e.g., raw API responses).
+  - `INFO` (1): Standard milestones (e.g., "Server started").
+  - `WARN` (2): **Default.** Non-critical issues (e.g., "Disk 80% full").
+  - `ERROR` (3): Operation failures (e.g., "Database connection failed").
+  - `CRITICAL` (4): System-wide danger (e.g., "Out of Memory", "Uncaught Exception").
+  - *Note: Setting a level (e.g., WARN) will include all levels above it (ERROR, CRITICAL) but ignore those below it (INFO, DEBUG).*
 - 🛡️ **Spam Protection**: Advanced 5-minute deduplication window for identical errors.
 - ✂️ **Message Splitting**: Automatically splits logs > 4096 chars to stay within Telegram limits.
 - 🔒 **Sanitization**: Automatically redacts sensitive keys (passwords, tokens, etc.) from metadata.
@@ -60,6 +66,23 @@ app.get('/', (req, res) => {
 });
 ```
 
+### Global Console Interception
+
+If you want to send all your existing `console.log`, `console.warn`, and `console.error` calls to Telegram without changing your code:
+
+```typescript
+const logger = new TelegramLogger({
+  botToken: '...',
+  chatId: '...',
+  appName: 'Phunplan',
+  interceptConsole: true
+});
+
+// Now this will also send to Telegram!
+console.log("This is a test log");
+console.error(new Error("Database connection failed"));
+```
+
 ## Configuration Options
 
 | Option | Type | Default | Description |
@@ -72,6 +95,7 @@ app.get('/', (req, res) => {
 | `resourceMonitoringInterval` | `number` | `60000` | ms between resource checks (0 to disable) |
 | `eventLoopLagThreshold` | `number` | `100` | ms threshold for event-loop lag alerts |
 | `preferIPv4` | `boolean` | `true` | Forces IPv4 first to avoid `EHOSTUNREACH` issues |
+| `interceptConsole` | `boolean` | `false` | If `true`, automatically sends all `console.log/warn/error` to Telegram |
 
 ## Environment Variables
 

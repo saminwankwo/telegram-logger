@@ -39,6 +39,8 @@ export interface LoggerOptions {
   enabled?: boolean;
   resourceMonitoringInterval?: number; // in ms, 0 to disable
   eventLoopLagThreshold?: number; // in ms, default 100
+  preferIPv4?: boolean; // default true, helps with EHOSTUNREACH errors
+  interceptConsole?: boolean; // default false, if true, patches global console methods
 }
 
 export interface RequestContext {
@@ -57,6 +59,12 @@ export class TelegramLogger {
   private lastCpuUsage: { user: number; system: number } | null = null;
   private lastCpuTime: number = 0;
   private readonly DEDUP_TTL = 5 * 60 * 1000; // 5 minutes
+  private originalConsole = {
+    log: console.log,
+    info: console.info,
+    warn: console.warn,
+    error: console.error,
+  };
 
   constructor(options: LoggerOptions) {
     this.options = {
@@ -67,9 +75,41 @@ export class TelegramLogger {
       eventLoopLagThreshold: 100,
       ...options,
     };
+
+    if (this.options.interceptConsole) {
+      this.patchConsole();
+    }
+
     this.setupAutoMonitoring();
     this.startMonitoring();
     this.setupCleanup();
+  }
+
+  /**
+   * Patches global console methods to send logs to Telegram
+   */
+  patchConsole() {
+    console.log = (...args: any[]) => {
+      this.originalConsole.log(...args);
+      this.info(args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' '));
+    };
+    console.info = (...args: any[]) => {
+      this.originalConsole.info(...args);
+      this.info(args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' '));
+    };
+    console.warn = (...args: any[]) => {
+      this.originalConsole.warn(...args);
+      this.warn(args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' '));
+    };
+    console.error = (...args: any[]) => {
+      this.originalConsole.error(...args);
+      const firstArg = args[0];
+      if (firstArg instanceof Error) {
+        this.error(firstArg, args.slice(1));
+      } else {
+        this.error(args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' '));
+      }
+    };
   }
 
   /**
@@ -192,10 +232,10 @@ export class TelegramLogger {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Telegram API Error:', response.status, errorData);
+        this.originalConsole.error('Telegram API Error:', response.status, errorData);
       }
     } catch (error) {
-      console.error('Failed to send message to Telegram via fetch:', error);
+      this.originalConsole.error('Failed to send message to Telegram via fetch:', error);
     }
   }
 
