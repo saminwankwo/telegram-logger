@@ -1,0 +1,42 @@
+{
+  "name": "telegrambot",
+  "version": "1.0.0",
+  "description": "A production-grade Telegram error logger for Node.js, capturing crashes, resource usage, and request context.",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "tsx src/test.ts",
+    "dev": "tsx watch src/test.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "telegram",
+    "logger",
+    "error-handler",
+    "monitoring",
+    "node.js",
+    "typescript",
+    "sentry-alternative",
+    "crash-report"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "axios": "^1.16.1",
+    "dotenv": "^16.4.7",
+    "node-telegram-bot-api": "^0.66.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "@types/node-telegram-bot-api": "^0.64.7",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
