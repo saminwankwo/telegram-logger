@@ -16,7 +16,7 @@ A production-grade, **zero-dependency** NPM package that captures, enriches, and
 ## Installation
 
 ```bash
-npm install telegram-error-logger
+npm install @alertship/alertship
 ```
 
 ## Usage
@@ -24,7 +24,7 @@ npm install telegram-error-logger
 ### Basic Setup
 
 ```typescript
-import { TelegramLogger, LogLevel } from 'telegram-error-logger';
+import { TelegramLogger, LogLevel } from '@alertship/alertship';
 
 const logger = new TelegramLogger({
   botToken: 'YOUR_BOT_TOKEN',
